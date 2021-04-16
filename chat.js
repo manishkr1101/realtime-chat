@@ -15,12 +15,44 @@ async function app() {
     }
 
 
+    /**
+     * 
+     * @param {string} msg Message to print
+     * @param {boolean} flag false if printing own message otherwise true
+     */
+    function renderMessage(msg, flag=true) {
+        if(flag == false) {
+            process.stdout.moveCursor(0,-1);
+        }
+        process.stdout.cursorTo(0);
+        process.stdout.moveCursor(0,-1);
+        process.stdout.write(msg);
+        process.stdout.moveCursor(0,1);
+        process.stdout.cursorTo(0);
+        process.stdout.clearLine(1);
+        process.stdout.write("\n");
+        // process.stdout.moveCursor(0,1);
+        if(flag) {
+            process.stdout.write("> ");
+        }
+    }
+    // simulating incoming message
+    setTimeout(() => {
+        renderMessage("new message 1")
+        renderMessage("message 2");
+    }, 1000);
+
+    setTimeout(() => {
+        renderMessage("bob : new message 3");
+    }, 10000);
+    
+    process.stdout.write('\n');
     while(true) {
         const res = await input("> ");
         if(res == 'exit') {
             process.exit(0);
         }
-        console.log(`me : ${res}`);
+        renderMessage(`me  : ${res}`,false);
     }
 }
 
