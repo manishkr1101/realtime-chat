@@ -2,6 +2,7 @@ const {input} = require('./util')
 
 async function app() {
     // ask for initialisation
+    // console.clear();
     console.log("1. Start conversation.");
     console.log("2. Join conversation.")
     const ans = await input("Enter choice : ")
@@ -14,7 +15,6 @@ async function app() {
         console.log("Enter details to connect");
     }
 
-
     /**
      * 
      * @param {string} msg Message to print
@@ -25,11 +25,13 @@ async function app() {
             process.stdout.moveCursor(0,-1);
         }
         process.stdout.cursorTo(0);
-        process.stdout.moveCursor(0,-1);
+        const dy = Math.ceil(msg.length/process.stdout.columns);
+        process.stdout.moveCursor(0,-1*dy);
         process.stdout.write(msg);
+        process.stdout.clearScreenDown();
         process.stdout.moveCursor(0,1);
         process.stdout.cursorTo(0);
-        process.stdout.clearLine(1);
+        // process.stdout.clearLine(1);
         process.stdout.write("\n");
         // process.stdout.moveCursor(0,1);
         if(flag) {
