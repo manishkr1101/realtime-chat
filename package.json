@@ -1,0 +1,22 @@
+{
+  "name": "realtime-chat",
+  "version": "1.0.0",
+  "description": "Realtime cli based chat application for sharing text as well as files.",
+  "main": "chat.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/manishkr1101/realtime-chat.git"
+  },
+  "keywords": [
+    "cli"
+  ],
+  "author": "manish",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/manishkr1101/realtime-chat/issues"
+  },
+  "homepage": "https://github.com/manishkr1101/realtime-chat#readme"
+}
