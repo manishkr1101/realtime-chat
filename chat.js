@@ -1,4 +1,4 @@
-const { input } = require('./util')
+const { input, renderMessage } = require('./util')
 const net = require('net')
 
 // accepts incoming socket connection asynchronously
@@ -34,13 +34,13 @@ async function app() {
     let socket = new net.Socket();
     if (ans == "1") {
         // start server and listen for other party to join
-        
+        // const host = await input("Enter host : ");
         var server = net.createServer();
         server.listen(5000);
 
         server.on('listening', function () {
             console.log('Connection Details ');
-            console.log('host :', server.address());
+            console.log('host :', server.address().family, server.address().address);
             console.log('port :', server.address().port);
             console.log("Waiting for someone to connect...");
         });
@@ -53,15 +53,22 @@ async function app() {
 
 
         socket = await accept(server);
+        server.close();
 
-        console.log('somone got connected')
+        console.log('someone got connected', socket.remoteAddress)
     }
     else if (ans == "2") {
         // join conversation with given information
         console.log("Enter details to connect");
         const port = 5000 || await input("Port : ");
-        const host = '2409:4064:30c:fcf5:9c27:1f5b:3819:d653' || await input("Host : ");
-        socket = await connect(port, host);
+        const host = await input("Host : ");
+        try {
+            socket = await connect(port, host);
+            
+        } catch (error) {
+            console.log(error)
+            closeApp();
+        }
 
         console.log('connection established')
 
@@ -69,31 +76,6 @@ async function app() {
     else {
         process.exit(1);
     }
-
-    /**
-     * 
-     * @param {string} msg Message to print
-     * @param {boolean} flag false if printing own message otherwise true
-     */
-    function renderMessage(msg, flag = true) {
-        if (flag == false) {
-            process.stdout.moveCursor(0, -1);
-        }
-        process.stdout.cursorTo(0);
-        const dy = Math.ceil(msg.length / process.stdout.columns);
-        process.stdout.moveCursor(0, -1 * dy);
-        process.stdout.write(msg);
-        process.stdout.clearScreenDown();
-        process.stdout.moveCursor(0, 1);
-        process.stdout.cursorTo(0);
-        // process.stdout.clearLine(1);
-        process.stdout.write("\n");
-        // process.stdout.moveCursor(0,1);
-        if (flag) {
-            process.stdout.write("> ");
-        }
-    }
-
 
     function closeApp() {
         if(server) server.close();
