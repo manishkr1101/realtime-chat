@@ -11,9 +11,9 @@ function accept(server) {
 }
 
 // connects to a socket server asynchronously
-function connect(port) {
+function connect(port, host) {
     const socket = new net.Socket();
-    socket.connect(port);
+    socket.connect(port, host);
     
     return new Promise((resolve, reject) => {
         socket.on('connect', function() {
@@ -39,7 +39,9 @@ async function app() {
         server.listen(5000);
 
         server.on('listening', function () {
-            
+            console.log('Connection Details ');
+            console.log('host :', server.address());
+            console.log('port :', server.address().port);
             console.log("Waiting for someone to connect...");
         });
         server.on('error', function (err) {
@@ -57,8 +59,9 @@ async function app() {
     else if (ans == "2") {
         // join conversation with given information
         console.log("Enter details to connect");
-        const port = await input("Port : ");
-        socket = await connect(port);
+        const port = 5000 || await input("Port : ");
+        const host = '2409:4064:30c:fcf5:9c27:1f5b:3819:d653' || await input("Host : ");
+        socket = await connect(port, host);
 
         console.log('connection established')
 
@@ -100,6 +103,11 @@ async function app() {
 
     socket.on('close', function() {
         renderMessage('connection closed')
+        closeApp();
+    })
+
+    socket.on('data', data => {
+        renderMessage(`frnd: ${data.toString()}`)
     })
 
     process.stdout.write('\n');
@@ -108,7 +116,15 @@ async function app() {
         if (res == 'exit') {
             closeApp();
         }
-        renderMessage(`me  : ${res}`, false);
+        if(res[0] == ":") {
+            // parse command
+            renderMessage('command')
+        }
+        else {
+            // send message
+            socket.write(res);
+            renderMessage(`me  : ${res}`, false);
+        }
     }
 
 }
