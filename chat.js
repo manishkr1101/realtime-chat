@@ -1,4 +1,5 @@
 const { input, renderMessage } = require('./util')
+const Channel = require('./message')
 const net = require('net')
 
 // accepts incoming socket connection asynchronously
@@ -88,9 +89,12 @@ async function app() {
         closeApp();
     })
 
-    socket.on('data', data => {
-        renderMessage(`frnd: ${data.toString()}`)
+    const channel = new Channel(socket);
+
+    channel.on('message', function(text) {
+        renderMessage(`frnd: ${text}`)
     })
+
 
     process.stdout.write('\n');
     while (true) {
@@ -100,11 +104,11 @@ async function app() {
         }
         if(res[0] == ":") {
             // parse command
-            renderMessage('command')
+            renderMessage('command', false);
         }
         else {
             // send message
-            socket.write(res);
+            channel.sendMessage(res);
             renderMessage(`me  : ${res}`, false);
         }
     }
