@@ -1,6 +1,7 @@
 const { input, renderMessage } = require('./util')
 const Channel = require('./message')
 const net = require('net')
+const fs = require('fs')
 
 // accepts incoming socket connection asynchronously
 function accept(server) {
@@ -95,6 +96,24 @@ async function app() {
         renderMessage(`frnd: ${text}`)
     })
 
+    channel.on('file', buffer => {
+        fs.writeFileSync('pic.jpg', buffer);
+        renderMessage('file recieved')
+    })
+
+    async function parseCommand(command, arg) {
+        switch(command) {
+            case 'file': {
+                await channel.sendFile(arg);
+                renderMessage(`me  : file sent ${arg}`, false);
+                break;
+            }
+            default: 
+                renderMessage('command not found', false);
+                break;
+        }
+    }
+
 
     process.stdout.write('\n');
     while (true) {
@@ -104,7 +123,13 @@ async function app() {
         }
         if(res[0] == ":") {
             // parse command
-            renderMessage('command', false);
+            const index = res.indexOf(' ');
+            if(index == -1) {
+                parseCommand(res.substr(1).trim());
+            }
+            else {
+                parseCommand(res.substring(1, index), res.substring(index+1).trim());
+            }
         }
         else {
             // send message

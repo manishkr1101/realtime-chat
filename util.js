@@ -4,6 +4,11 @@ const rl = readline.createInterface({
     output: process.stdout
 });
 
+/**
+ * 
+ * @param {string} msg 
+ * @returns {string}
+ */
 async function input(msg) {
     return new Promise((resolve, reject) => {
         rl.question(msg, function(answer) {
@@ -36,7 +41,13 @@ function renderMessage(msg, flag = true) {
     }
 }
 
+function pad(text, len, char='0') {
+    const s = Math.max(len - text.length, 0);
+    return char.repeat(s) + text;
+}
+
 module.exports = {
     input,
-    renderMessage
+    renderMessage,
+    pad
 }
