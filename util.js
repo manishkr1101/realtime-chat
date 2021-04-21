@@ -46,8 +46,15 @@ function pad(text, len, char='0') {
     return char.repeat(s) + text;
 }
 
+function debug(msg, cb=console.log, ...args) {
+    if(process.env.DEBUG) {
+        cb(msg, ...args)
+    }
+}
+
 module.exports = {
     input,
     renderMessage,
-    pad
+    pad,
+    debug
 }

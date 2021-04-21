@@ -1,6 +1,6 @@
 const fs = require('fs')
 const net = require('net');
-const { renderMessage, pad } = require('./util');
+const { renderMessage, pad, debug } = require('./util');
 class Messanger {
     /**
      * 
@@ -12,12 +12,16 @@ class Messanger {
         this.fileCallbacks = [];
 
         this.buffer = Buffer.alloc(0);
-        this.fileBuffer = Buffer.alloc(0);
+        /** @type {Array<Buffer>} */
+        this.fileBuffers = [];
 
         this.i = 1;
         this.socket.on('data', data => {
             this.processBuffer(data);
-            // renderMessage('data came '+data.length + ` ${this.i++} BufferLen : ${this.buffer.length} file: ${this.fileBuffer.length}`)
+            if(this.i%100==0) {
+                debug('data came '+data.length + ` ${this.i} BufferLen : ${this.buffer.length} file: ${this.fileBuffers.length}`, renderMessage)
+            }
+            this.i++;
         })
 
     }
@@ -42,17 +46,17 @@ class Messanger {
 
     sendFile(filePath) {
         return new Promise((resolve, reject) => {
-
-            const readStream = fs.createReadStream(filePath, { highWaterMark: 16384 });
+            const CHUNK_SIZE = 16 * 1024; 
+            const readStream = fs.createReadStream(filePath, { highWaterMark: CHUNK_SIZE });
             readStream.on('data', chunk => {
                 const head = Buffer.from("FILE");
 
                 let sizeHex = chunk.length.toString(16);
                 sizeHex = pad(sizeHex, 4);
                 const size = Buffer.from(sizeHex);
-                // console.log('chunk size', chunk.length)
+                debug('chunk size '+ chunk.length);
 
-                if (chunk.length < 16384) {
+                if (chunk.length < CHUNK_SIZE) {
                     var delimiter = Buffer.from('$');
                 }
                 else {
@@ -129,11 +133,12 @@ class Messanger {
                 const delimiter = this.buffer.slice(8 + size, 9 + size).toString();
                 // renderMessage("delm "+delimiter);
                 if (delimiter == '@') {
-                    this.fileBuffer = Buffer.concat([this.fileBuffer, content])
+                    // this.fileBuffer = Buffer.concat([this.fileBuffer, content])
+                    this.fileBuffers.push(content)
                 }
                 else if (delimiter == '$') {
-                    this.emit('file', this.fileBuffer);
-                    this.fileBuffer = Buffer.alloc(0);
+                    this.emit('file', Buffer.concat(this.fileBuffers));
+                    this.fileBuffers = [];
                 }
             }
             else {

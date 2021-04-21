@@ -2,6 +2,7 @@ const { input, renderMessage } = require('./util')
 const Channel = require('./message')
 const net = require('net')
 const fs = require('fs')
+const path = require('path')
 
 // accepts incoming socket connection asynchronously
 function accept(server) {
@@ -97,8 +98,9 @@ async function app() {
     })
 
     channel.on('file', buffer => {
-        fs.writeFileSync('pic.jpg', buffer);
-        renderMessage('file recieved')
+        const filePath = path.resolve(process.env.DOWNLOAD || '', 'vid.mkv');
+        fs.writeFileSync(filePath, buffer);
+        renderMessage('file recieved : '+filePath)
     })
 
     async function parseCommand(command, arg) {
