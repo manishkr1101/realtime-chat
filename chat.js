@@ -1,10 +1,15 @@
-const { input, renderMessage } = require('./util')
+const { input, renderMessage, init, setConfig, debug, getConfig } = require('./util')
 const Channel = require('./message')
 const net = require('net')
 const fs = require('fs')
 const path = require('path')
 
-// accepts incoming socket connection asynchronously
+init();
+/**
+ * accepts incoming socket connection asynchronously
+ * @param {net.Server} server 
+ * @returns {Promise<net.Socket>}
+ */
 function accept(server) {
     return new Promise((resolve, reject) => {
         server.on('connection', socket => {
@@ -67,13 +72,13 @@ async function app() {
         const host = await input("Host : ");
         try {
             socket = await connect(port, host);
+            console.log('connection established');
             
         } catch (error) {
             console.log(error)
             closeApp();
         }
 
-        console.log('connection established')
 
     }
     else {
@@ -98,7 +103,7 @@ async function app() {
     })
 
     channel.on('file', buffer => {
-        const filePath = path.resolve(process.env.DOWNLOAD || '', 'vid.mkv');
+        const filePath = path.resolve(getConfig('DOWNLOAD') || '', 'vid.mkv');
         fs.writeFileSync(filePath, buffer);
         renderMessage('file recieved : '+filePath)
     })
@@ -108,6 +113,18 @@ async function app() {
             case 'file': {
                 await channel.sendFile(arg);
                 renderMessage(`me  : file sent ${arg}`, false);
+                break;
+            }
+            case 'set': {
+                debug("set value : ", renderMessage, arg);
+                const [key, value] = arg.split('=');
+                setConfig(key, value);
+                renderMessage(`config set : ${key} = ${value}`, false);
+                break;
+            }
+            case 'get': {
+                const key = arg.trim();
+                renderMessage(`${key} : ${getConfig(key)}`, false);
                 break;
             }
             default: 

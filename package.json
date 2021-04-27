@@ -4,7 +4,7 @@
   "description": "Realtime cli based chat application for sharing text as well as files.",
   "main": "chat.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "export DEBUG=1 && node chat.js"
   },
   "repository": {
     "type": "git",

@@ -1,4 +1,5 @@
 const readline = require("readline");
+const fs = require('fs');
 const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout
@@ -52,9 +53,46 @@ function debug(msg, cb=console.log, ...args) {
     }
 }
 
+const config = {};
+
+function init() {
+    if(fs.existsSync('config.json')) {
+        const content = fs.readFileSync('config.json');
+        const data = JSON.parse(content);
+        for(const key in data) {
+            config[key] = data[key];
+        }
+        debug(config);
+    }
+    else {
+        fs.writeFileSync('config.json', Buffer.from("{}"));
+    }
+}
+
+function setConfig(key, value) {
+    config[key] = value;
+    fs.writeFileSync(
+        'config.json',
+        Buffer.from(JSON.stringify(config))
+    );
+}
+
+function getConfig(key) {
+    if(key) {
+        return config[key];
+    }
+    else {
+        return config;
+    }
+}
+
+
 module.exports = {
     input,
     renderMessage,
     pad,
-    debug
+    debug,
+    init,
+    setConfig,
+    getConfig
 }
