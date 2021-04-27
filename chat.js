@@ -102,8 +102,11 @@ async function app() {
         renderMessage(`frnd: ${text}`)
     })
 
-    channel.on('file', buffer => {
-        const filePath = path.resolve(getConfig('DOWNLOAD') || '', 'vid.mkv');
+    channel.on('file', file => {
+        debug(file.metadata, renderMessage);
+        const fileName = file.metadata.name;
+        const buffer = file.data;
+        const filePath = path.resolve(getConfig('DOWNLOAD') || '', fileName);
         fs.writeFileSync(filePath, buffer);
         renderMessage('file recieved : '+filePath)
     })

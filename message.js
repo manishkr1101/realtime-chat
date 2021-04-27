@@ -1,6 +1,27 @@
 const fs = require('fs')
 const net = require('net');
+const path = require('path')
 const { renderMessage, pad, debug } = require('./util');
+const h = require('./headers')
+
+class Packet {
+    static from(header, data='') {
+        const head = Buffer.from(header);
+
+        const chunk = Buffer.from(data);
+
+        let sizeHex = chunk.length.toString(16);
+        sizeHex = pad(sizeHex, 4);
+        const size = Buffer.from(sizeHex);
+
+        const delimiter = Buffer.from('@');
+
+        const packet = Buffer.concat([head, size, chunk, delimiter]);
+
+        return packet;
+    }
+}
+
 class Messanger {
     /**
      * 
@@ -14,7 +35,9 @@ class Messanger {
         this.buffer = Buffer.alloc(0);
         /** @type {Array<Buffer>} */
         this.fileBuffers = [];
-
+        /** @type {File} */
+        this.file = {}
+        
         this.i = 1;
         this.socket.on('data', data => {
             this.processBuffer(data);
@@ -27,18 +50,8 @@ class Messanger {
     }
 
     sendMessage(text) {
-        const head = Buffer.from("TEXT");
 
-        const chunk = Buffer.from(text);
-
-        let sizeHex = chunk.length.toString(16);
-        sizeHex = pad(sizeHex, 4);
-        const size = Buffer.from(sizeHex);
-
-        const delimiter = Buffer.from('@');
-
-        const packet = Buffer.concat([head, size, chunk, delimiter]);
-
+        const packet = Packet.from(h.TEXT, text);
         this.socket.write(packet);
 
         return this;
@@ -46,30 +59,30 @@ class Messanger {
 
     sendFile(filePath) {
         return new Promise((resolve, reject) => {
-            const CHUNK_SIZE = 16 * 1024; 
+            const metadata = {
+                name: path.basename(filePath),
+                ext: path.extname(filePath),
+                size: fs.statSync(filePath).size
+            }
+
+            debug(metadata, renderMessage, false);
+
+            const metadataPacket = Packet.from(h.FILE_START, JSON.stringify(metadata));
+            this.socket.write(metadataPacket);
+            
+            const CHUNK_SIZE = 16 * 1024;
+
             const readStream = fs.createReadStream(filePath, { highWaterMark: CHUNK_SIZE });
+
             readStream.on('data', chunk => {
-                const head = Buffer.from("FILE");
-
-                let sizeHex = chunk.length.toString(16);
-                sizeHex = pad(sizeHex, 4);
-                const size = Buffer.from(sizeHex);
-                debug('chunk size '+ chunk.length);
-
-                if (chunk.length < CHUNK_SIZE) {
-                    var delimiter = Buffer.from('$');
-                }
-                else {
-                    var delimiter = Buffer.from('@');
-                }
-
-
-                const packet = Buffer.concat([head, size, chunk, delimiter]);
+                const packet = Packet.from(h.FILE, chunk);
 
                 this.socket.write(packet);
             })
 
             readStream.on('end', () => {
+                const packet = Packet.from(h.FILE_END);
+                this.socket.write(packet);
                 resolve()
             })
         })
@@ -77,8 +90,18 @@ class Messanger {
     }
 
     /**
+     * @typedef {Object} Metadata
+     * @property {string} name
+     * @property {string} ext
+     * @property {number} size
+     * @typedef {Object} File
+     * @property {Metadata} metadata
+     * @property {Buffer} data
+     */
+
+    /**
      * @callback dataCallback
-     * @param {string|Buffer} data
+     * @param {string|File} data
      */
 
     /**
@@ -124,22 +147,28 @@ class Messanger {
                 break;
             }
 
-            if (head == 'TEXT') {
+            if (head == h.TEXT) {
                 const content = this.buffer.slice(8, 8 + size);
                 this.emit('message', content.toString());
             }
-            else if (head == 'FILE') {
+            else if(head == h.FILE_START) {
+                const content = this.buffer.slice(8, 8+size).toString();
+                debug(content, renderMessage);
+                this.file.metadata = JSON.parse(content);
+            }
+            else if (head == h.FILE) {
                 const content = this.buffer.slice(8, 8 + size);
                 const delimiter = this.buffer.slice(8 + size, 9 + size).toString();
+
+                this.fileBuffers.push(content)
                 // renderMessage("delm "+delimiter);
-                if (delimiter == '@') {
-                    // this.fileBuffer = Buffer.concat([this.fileBuffer, content])
-                    this.fileBuffers.push(content)
-                }
-                else if (delimiter == '$') {
-                    this.emit('file', Buffer.concat(this.fileBuffers));
-                    this.fileBuffers = [];
-                }
+                
+            }
+            else if(head == h.FILE_END) {
+                this.file.data = Buffer.concat(this.fileBuffers);
+                this.fileBuffers = [];
+                this.emit('file', this.file);
+                this.file = {};
             }
             else {
                 renderMessage('something wrong with header ' + head)
